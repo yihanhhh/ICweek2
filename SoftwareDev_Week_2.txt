@@ -15,6 +15,21 @@ return (select sum(price) from CustomerSales where [Customer Id] = @CustomerId);
 
 --return @amount
 end
+
+CREATE function [dbo].[GetCustomerAge] (@CustomerId int)
+returns int
+as
+begin
+	declare @Age int;
+    declare @DateOfBirth datetime;
+
+    select @DateOfBirth = DateOfBirth FROM Customer WHERE Id = @CustomerId;
+
+    set @Age = (0 + CONVERT(char(8), GETDATE(), 112) - CONVERT(char(8), @DateOfBirth, 112)) / 10000;
+
+    return @Age;
+end
+
 GO
 /****** Object:  Table [dbo].[Customer]    Script Date: 03/06/2024 16:21:03 ******/
 SET ANSI_NULLS ON
@@ -31,6 +46,16 @@ CREATE TABLE [dbo].[Customer](
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
+
+CREATE TABLE [dbo].[Store](
+	[Name] [nvarchar](30) NOT NULL,
+	[Location] [nvarchar](max) NULL,
+ CONSTRAINT [PK_Store] PRIMARY KEY CLUSTERED 
+(
+	[Name]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+
 GO
 /****** Object:  Table [dbo].[Product]    Script Date: 03/06/2024 16:21:03 ******/
 SET ANSI_NULLS ON
@@ -81,6 +106,19 @@ select c.Id as 'Customer Id', c.FirstName, c.LastName, s.DateSold, p.[Name], p.P
 					left join 
 						Product p on
 							s.ProductId = p.Id 
+
+Alter view [dbo].[CustomerSales]
+as
+select c.Id as 'Customer Id', c.FirstName, c.LastName, s.DateSold, p.[Name], p.Price, c.FirstName + '' + c.LastName as FullName
+, [dbo].[GetCustomerAmount](c.Id) as 'Total Purchases', [dbo].[GetCustomerAge](c.Id) as 'Age'
+	from Customer c
+		left join 
+			Sale s on 
+				c.Id = s.CustomerId
+					left join 
+						Product p on
+							s.ProductId = p.Id 
+
 GO
 SET IDENTITY_INSERT [dbo].[Customer] ON 
 GO
